@@ -1,0 +1,24 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+    background-attachment: fixed;
+    font-family: 'Raleway', sans-serif;  
+  }
+  
+  textarea, input { 
+    outline: none;
+    border: none;
+  }
+
+  .blink {
+    animation: blinker 1s linear infinite;
+  }
+  
+  @keyframes blinker {
+    50% {
+    opacity: 0;
+    }
+  }
+  
