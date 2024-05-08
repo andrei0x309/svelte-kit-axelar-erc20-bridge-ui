@@ -24,46 +24,49 @@
     export let message = '';
     export let isDismissable = true;
     export let currentType: keyof typeof type = 'success';
+    let isBlinking = false;
 
 
-    const showMessages = (msg: string, txAlert = false) => {
+    const showMessages = (msg: string, txAlert = false, blink = false) => {
         message = msg;
         isVisibile = true;
         isTxAlert = txAlert;
+        isBlinking = blink;
+        isDismissable = !blink
         compKey += 1;
     }
 
-    export const showErrorMessage = (msg: string) => {
+    export const showErrorMessage = (msg: string, blink = false) => {
         currentType = 'error';
-        showMessages(msg)
+        showMessages(msg, false, blink)
     }
 
-    export const showWarningMessage = (msg: string) => {
+    export const showWarningMessage = (msg: string, blink = false) => {
         currentType = 'warning';
-        showMessages(msg)
+        showMessages(msg, false, blink)
     }
 
-    export const showSuccessMessage = (msg: string) => {
+    export const showSuccessMessage = (msg: string, blink = false) => {
         currentType = 'success';
-        showMessages(msg)
+        showMessages(msg, false, blink)
     }
 
-    export const showInfoMessage = (msg: string) => {
+    export const showInfoMessage = (msg: string, blink = false) => {
         currentType = 'info';
-        showMessages(msg)
+        showMessages(msg, false, blink)
     }
 
     export const showTxMessage = (link: string) => {
         currentType = 'success';
         txLink = link;
-        showMessages('', true)
+        showMessages('', true, false)
     }
 
   </script>
   
   {#key compKey}
   {#if isVisibile}
-  <Alert color={type[currentType]} dismissable={isDismissable} transition={fly} params={{ x: 200 }} class={classVar}>
+  <Alert color={type[currentType]} dismissable={isDismissable} transition={fly} params={{ x: 200 }} class={`${classVar} ${isBlinking ? 'blink': ''}`}>
     <InfoCircleSolid slot="icon" class="w-5 h-5" />
     {#if isTxAlert}
     Your transaction was sent successful. You watch it on 

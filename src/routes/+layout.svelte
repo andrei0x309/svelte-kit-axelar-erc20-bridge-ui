@@ -12,8 +12,8 @@ import { config } from "$lib/utils/config";
 	<Navbar class="px-2 sm:px-4 py-2.5 w-full border-b dark:bg-zinc-950">
 	  <NavBrand href="/">
 		<div class="self-center whitespace-nowrap text-xl font-semibold dark:text-white flex flex-col mt-5">
-			<span >Bridge</span>
-			<span class="text-[0.6rem] opacity-60 -mt-2">ENV: {config.isProd ? 'Production' : 'Development'}</span>
+			<span>ERC20 Bridge</span>
+			<span class="text-[0.6rem] opacity-60 -mt-2">An axelar network community bridge</span>
 		</div>
 	  </NavBrand>
 	  <NavHamburger />

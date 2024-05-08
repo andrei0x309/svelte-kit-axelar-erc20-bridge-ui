@@ -52,7 +52,7 @@
 	import { formatEther, parseEther } from 'viem';
 	import type { historyItem } from '$lib/utils/bridge';
 	import { faucetERC20ABI } from '$lib/abis/partialFaucetERC20';
-	import {interchainTokenServiceContractABI as fullInterchainTokenServiceContractABI } from '$lib/abis/interChianTokenService';
+	// import {interchainTokenServiceContractABI as fullInterchainTokenServiceContractABI } from '$lib/abis/interChianTokenService';
 
 	const allChains = { ...mainnetChains, ...testnetChains };
 	const availableChains = config.isProd ? mainnetChains : testnetChains;
@@ -324,15 +324,40 @@
 		}
 		const value = await gasEstimator(sourceChain, destChain, alert?.showErrorMessage ?? (() => {}))
 		const addresses = getAddresses();
-		const TOKEN_ID = addresses.tokenIds[sourceChain];
+		const TOKEN_ID = addresses.tokenIds[isProd ? 'production': 'development'];
 		const alexarChainId = axelarChainIdents[destChain];
 		const address = (await wgamiLib.wgamiCore.getAccount(wgamiLib.wgConfig.wagmiConfig)).address;
 
 		let tx: Awaited<ReturnType<typeof wgamiLib.wgamiCore.writeContract>> | null = null;
 
 		try {
+
+			alert?.showInfoMessage('Waiting for approve transaction to be confirmed', true);
+
+			const approveTx = await wgamiLib.wgamiCore.writeContract(wgamiLib.wgConfig.wagmiConfig, {
+				abi: tokenAbi,
+				address: addresses.tokenAddresses[sourceChain] as `0x${string}`,
+				functionName: 'approve',
+				args: [interchainTokenServiceContractAddress as `0x${string}`, parseEther(transferAmount.toString())]
+			});
+
+			const reciept = await wgamiLib.wgamiCore.waitForTransactionReceipt(wgamiLib.wgConfig.wagmiConfig, {
+				confirmations: 2,
+				hash: approveTx,
+				chainId: sourceChain
+			})
+
+			if (!reciept) {
+				alert?.showErrorMessage('Approve transaction failed');
+				loading = false;
+				return;
+			}
+
+			await new Promise((resolve) => setTimeout(resolve, 1000));
+
+
 			tx = await wgamiLib.wgamiCore.writeContract(wgamiLib.wgConfig.wagmiConfig, {
-				abi: fullInterchainTokenServiceContractABI,
+				abi: interchainTokenServiceContractABI,
 				address: interchainTokenServiceContractAddress as `0x${string}`,
 				functionName: 'interchainTransfer',
 				args: [TOKEN_ID, alexarChainId, address, parseEther(transferAmount.toString()), '0x', value]
