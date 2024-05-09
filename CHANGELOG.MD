@@ -1,5 +1,10 @@
 # Changelog
 
+## - 1.0.3 - dev
+
+- added option to log every confirmed transaction by adding custom log endpoint in config file
+- added an intial list of axelar tokens
+- added the about page contnet
 
 ## - 1.0.2 - dev
 

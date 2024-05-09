@@ -5,9 +5,9 @@ import { Navbar, NavBrand, NavLi, NavUl, NavHamburger, ImagePlaceholder, Skeleto
 import { Footer, FooterCopyright, FooterLinkGroup, FooterLink, FooterBrand, FooterIcon, DarkMode } from 'flowbite-svelte';
 import { FacebookSolid, GithubSolid, DiscordSolid, TwitterSolid } from 'flowbite-svelte-icons';
 import { config } from "$lib/utils/config";
+import TransferIcon from '$lib/components/icons/TransferIcon.svelte';
 
 </script>
-  
   <div class="relative">
 	<Navbar class="px-2 sm:px-4 py-2.5 w-full border-b dark:bg-zinc-950">
 	  <NavBrand href="/">
@@ -32,6 +32,7 @@ import { config } from "$lib/utils/config";
 	  <Footer footerType="socialmedia" class="dark:bg-zinc-950">
 		<div class="md:flex md:justify-between">
 		  <div class="mb-6 md:mb-0">
+			<TransferIcon class="w-10 h-10" />
 		  </div>
 		  <div class="grid grid-cols-2 gap-8 sm:gap-6 sm:grid-cols-3">
 			<div>

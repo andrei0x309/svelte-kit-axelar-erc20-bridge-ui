@@ -19,7 +19,10 @@
 		TableBodyCell,
 		TableBodyRow,
 		TableHead,
-		TableHeadCell
+		TableHeadCell,
+		Heading,
+		P,
+		A 
 	} from 'flowbite-svelte';
 
 	import { routes } from '$lib/utils/routes';
@@ -45,7 +48,8 @@
 		formatNumber,
 		gasEstimator,
 		axelarChainIdents,
-		interchainTokenServiceContractAddress
+		interchainTokenServiceContractAddress,
+		logtoEndpoint
 	} from '$lib/utils/bridge';
 	import { tokenAbi } from '$lib/abis/partialCustomERC20';
 	import { interchainTokenServiceContractABI } from '$lib/abis/partialInterChainTokenService';
@@ -56,14 +60,13 @@
 
 	const allChains = { ...mainnetChains, ...testnetChains };
 	const availableChains = config.isProd ? mainnetChains : testnetChains;
-	const minAmount = 25;
-	const isProd = config.isProd;
-	const isFaucetEnabled = config.isFaucetEnabled;
+	const { isProd, isFaucetEnabled, defaultDestChain, defaultSourceChain, isSupportLogEnabled, token, supportLogEndpoint  } = config;
+	const minAmount = isProd ? 5 : 25;
 
 	let pageTitle = '';
 	let isPageNotFound = false;
-	let sourceChain = config.defaultSourceChain;
-	let destChain = config.defaultDestChain;
+	let sourceChain = defaultSourceChain;
+	let destChain = defaultDestChain;
 	let isConnected = false;
 	let isBaseTestnet = sourceChain === EVMChainIds.BASE_TESTNET;
 	const Web3Libs = web3Libs();
@@ -292,7 +295,7 @@
 			return;
 		}
 		if (transferAmount < minAmount) {
-			alert?.showErrorMessage(`Minimum amount is ${minAmount} ${config.token}`);
+			alert?.showErrorMessage(`Minimum amount is ${minAmount} ${token}`);
 			return;
 		}
 		if (transferAmount > balance) {
@@ -385,6 +388,18 @@
 			tx,
 			date: new Date().toISOString()
 		});
+
+		if (isSupportLogEnabled && supportLogEndpoint !== '') {
+			logtoEndpoint({
+				sourceChain,
+				destChain,
+				amount: transferAmount,
+				tx,
+				address: address || "",
+				sourceChainIdent: axelarChainIdents[sourceChain],
+				destChainIdent: axelarChainIdents[destChain]
+			});
+		}
 
 		balance -= transferAmount;
 		transferAmount = 0;
@@ -479,8 +494,8 @@
 </script>
 
 <svelte:head>
-	<title>Bridge {config.token} - {pageTitle}</title>
-	<meta name="description" content={`Bridge token ${config.token} to multiple blockchains`} />
+	<title>Bridge {token} - {pageTitle}</title>
+	<meta name="description" content={`Bridge token ${token} to multiple blockchains`} />
 </svelte:head>
 
 <Tabs
@@ -514,14 +529,14 @@
 							{/if}
 						</div>
 						<div class={`w-1/2 text-right ${isLoadingBalance ? 'blink' : ''}`}>
-							{formatNumber(balance)} <span class="text-[1rem]">{config.token}</span>
+							{formatNumber(balance)} <span class="text-[1rem]">{token}</span>
 						</div>
 					</div>
 					<Label class="space-y-2">
 						<span>Source Chain</span>
 						<ButtonGroup class="w-full">
 							<NumberInput
-								placeholder={`${'amount'} ${config.token}`}
+								placeholder={`${'amount'} ${token}`}
 								bind:value={transferAmount}
 								id="source-input"
 							/>
@@ -551,7 +566,7 @@
 						<ButtonGroup class="w-full">
 							<NumberInput
 								disabled
-								placeholder={`${'amount'} ${config.token}`}
+								placeholder={`${'amount'} ${token}`}
 								bind:value={transferAmount}
 							/>
 							<Button
@@ -584,7 +599,7 @@
 						>
 					{:else}
 						<Button type="button" class="w-full" on:click={() => execBridge()}
-							>Bridge {config.token}</Button
+							>Bridge {token}</Button
 						>
 					{/if}
 
@@ -613,7 +628,28 @@
 		</div>
 		<Card class="mx-auto dark:bg-zinc-950 max-w-4xl">
 			{#if $page.url.pathname === '/about'}
-				<p>Info not availabe yet.</p>
+				
+			<Heading  tag="h2" customSize="text-2xl font-extrabold mb-4">svelte-kit-axelar-bridge-erc20</Heading>
+		<P class="mb-8">This a <A href="https://github.com/andrei0x309/svelte-kit-axelar-erc20-bridge-ui">open-source</A> community maintained UI for the Axelar Network bridge for ERC20 tokens.</P>
+		<P class="mb-4">Current configured token symbol: <b>{token}</b></P>
+		<P class="mb-4">Project is a Svelte Kit UI app to bridge ERC20 to multiple chains using Axelar Network for custom non-canonical tokens.</P>
+		<P class="mb-4">Supports testnet and mainnet envoirment, by editing the config file, supports any custom non-canonical, non-warped ERC20 token, also has faucet functionality when is configured to use a faucet contract in development mode.</P>
+		<P class="mb-4">For faucet contract, token sample contract and Axelar Network scripts to deploy token managers you can check this repository</P>
+		<P class="mb-4">This instance is deployed at: yup-bridge.pages.dev</P>
+
+		<Heading  tag="h2" customSize="text-2xl font-extrabold my-4">Tech stack</Heading>
+
+		<ul>
+			<li>Svelte Kit</li>
+			<li>Tailwind CSS</li>
+			<li>Flowbite Svelte</li>
+			<li>Axelar SDK</li>
+			<li>Wagmi SDK</li>
+			<li>Web3Modal with all wallets enabeled incuding Coinbase Wallet</li>
+			<li>Viem</li>
+			<li>Vite</li>
+		</ul>
+
 			{:else if history.length === 0}
 				<Alert
 					isDismissable={false}
@@ -710,7 +746,7 @@
 							{/if}
 						</div>
 						<div class={`w-1/2 text-right ${isLoadingBalance ? 'blink' : ''}`}>
-							{formatNumber(faucetBalance)} <span class="text-[1rem]">{config.token}</span>
+							{formatNumber(faucetBalance)} <span class="text-[1rem]">{token}</span>
 						</div>
 					</div>
 					<Label class="space-y-2">
@@ -745,7 +781,7 @@
 						>
 					{:else}
 						<Button type="button" class="w-full" on:click={() => execFaucet()}
-							>Get TestNet {config.token}</Button
+							>Get TestNet {token}</Button
 						>
 					{/if}
 

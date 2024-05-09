@@ -4,6 +4,8 @@
 
 Svelte Kit UI app to bridge ERC20 to multiple chains using Axelar Network for custom non-canonical tokens.
 
+This is a community maintained project.
+
 Supports testnet and mainnet envoirment, by editing the config file, supports any custom non-canonical, non-warped ERC20 token,
 also has faucet functionality when is configured to use a faucet contract in development mode.
 

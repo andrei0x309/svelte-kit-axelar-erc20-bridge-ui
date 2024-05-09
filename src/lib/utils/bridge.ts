@@ -15,23 +15,17 @@ import {
   
   tokenAddresses[EVMChainIds.ETHEREUM_MAINNET] = '0x69bBC3F8787d573F1BBDd0a5f40C7bA0Aee9BCC9'
   tokenAddresses[EVMChainIds.POLYGON_MAINNET] = '0x086373fad3447F7F86252fb59d56107e9E0FaaFa'
-  tokenAddresses[EVMChainIds.BASE_MAINNET] = ''
+  tokenAddresses[EVMChainIds.BASE_MAINNET] = '0x01CCF4941298a0b5AC4714c0E1799a2dF8387048'
   
   const tokenManagerAddresses = {} as Record<string, string>
   
   tokenManagerAddresses['development'] = '0xF9d3D15c33Fe77B94eE4F9bC217191E7D57e7b87'
-  tokenManagerAddresses['production'] = ''
-  
-  const tokenManagerSalts = {} as Record<string, string>
-  
-  tokenManagerSalts['development'] = '0xd47e19710f67ab242ddd31c57049ea859d9c535601016be0f4b722dbd8c2257f'
-  tokenManagerSalts['production'] = ''
-  
+  tokenManagerAddresses['production'] = '0x479F48155da401A5AfE9B7C8aB0a1Aa3775A30Cb'
   
   const tokenIds = {} as Record<string, string>
   
   tokenIds['development'] = '0xe11612130815cb08186e03a7a1a62812684322b1150036f8eee10eaa8f8a6366'
-  tokenIds['production'] = ''
+  tokenIds['production'] = '0x2c0750c34da5c9c247905e00ab868ebd7cfca098836eea019f0d0703426eac1b'
   
   const owner = "0x01Ca6f13E48fC5E231351bA38e7E51A1a7835d8D";
   
@@ -41,7 +35,6 @@ import {
       return {
           tokenAddresses,
           tokenManagerAddresses,
-          tokenManagerSalts,
           tokenIds,
           BASE_FAUCET_TESTNET,
           owner
@@ -140,4 +133,39 @@ export const addHistory = (item: historyItem) => {
     history.unshift(item);
     localStorage.setItem(historyKey, JSON.stringify(history));
     return history;
+}
+
+export const logtoEndpoint = async (
+    {address, amount, sourceChain, destChain, tx, sourceChainIdent, destChainIdent}:
+    {
+    address: string,
+    amount: number,
+    sourceChain: number,
+    destChain: number,
+    tx: string,
+    sourceChainIdent: string,
+    destChainIdent: string,
+}) => {
+
+    const dbData = {
+        address,
+        amount,
+        source_chain_id:sourceChain,
+        dest_chain_id:destChain,
+        tx,
+        source_chain_name:sourceChainIdent,
+        dest_chain_name:destChainIdent
+    }
+
+    try {
+       await fetch(config.supportLogEndpoint, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(dbData)
+        });
+    } catch {
+        console.error('Support log failed');
+    }
 }
