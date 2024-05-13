@@ -52,15 +52,15 @@
 		logtoEndpoint
 	} from '$lib/utils/bridge';
 	import { tokenAbi } from '$lib/abis/partialCustomERC20';
-	import { interchainTokenServiceContractABI } from '$lib/abis/partialInterChainTokenService';
-	import { formatEther, parseEther } from 'viem';
+	// import { interchainTokenServiceContractABI } from '$lib/abis/partialInterChainTokenService';
+	import { formatUnits, parseUnits } from 'viem';
 	import type { historyItem } from '$lib/utils/bridge';
 	import { faucetERC20ABI } from '$lib/abis/partialFaucetERC20';
-	// import {interchainTokenServiceContractABI as fullInterchainTokenServiceContractABI } from '$lib/abis/interChianTokenService';
+	import {interchainTokenServiceContractABI } from '$lib/abis/interChianTokenService';
 
 	const allChains = { ...mainnetChains, ...testnetChains };
 	const availableChains = config.isProd ? mainnetChains : testnetChains;
-	const { isProd, isFaucetEnabled, defaultDestChain, defaultSourceChain, isSupportLogEnabled, token, supportLogEndpoint  } = config;
+	const { isProd, isFaucetEnabled, defaultDestChain, defaultSourceChain, isSupportLogEnabled, token, supportLogEndpoint, decimals } = config;
 	const minAmount = isProd ? 5 : 25;
 
 	let pageTitle = '';
@@ -185,7 +185,8 @@
 					args: [address]
 				})) as null | bigint;
 
-				balance = Number(formatEther(chainBalance ? chainBalance : 0n));
+				balance = Number(formatUnits(chainBalance ? chainBalance : 0n, decimals));
+				console.log('balance', balance);
 			} catch (error) {
 				// ignore
 			}
@@ -203,7 +204,7 @@
 					}
 				)) as null | bigint;
 
-				faucetBalance = Number(formatEther(faucetChainBalance ? faucetChainBalance : 0n));
+				faucetBalance = Number(formatUnits(faucetChainBalance ? faucetChainBalance : 0n, decimals));
 			} catch {
 				// ignore
 			}
@@ -294,14 +295,14 @@
 			alert?.showErrorMessage('Please connect wallet');
 			return;
 		}
-		if (transferAmount < minAmount) {
-			alert?.showErrorMessage(`Minimum amount is ${minAmount} ${token}`);
-			return;
-		}
-		if (transferAmount > balance) {
-			alert?.showErrorMessage(`Transfer amount exceeds available balance`);
-			return;
-		}
+		// if (transferAmount < minAmount) {
+		// 	alert?.showErrorMessage(`Minimum amount is ${minAmount} ${token}`);
+		// 	return;
+		// }
+		// if (transferAmount > balance) {
+		// 	alert?.showErrorMessage(`Transfer amount exceeds available balance`);
+		// 	return;
+		// }
 		if (sourceChain === destChain) {
 			alert?.showErrorMessage('Source and destination chain cannot be the same');
 			return;
@@ -325,7 +326,7 @@
 			loading = false;
 			return;
 		}
-		const value = await gasEstimator(sourceChain, destChain, alert?.showErrorMessage ?? (() => {}))
+		const value = await gasEstimator(sourceChain, destChain, alert?.showErrorMessage ?? (() => {}));
 		const addresses = getAddresses();
 		const TOKEN_ID = addresses.tokenIds[isProd ? 'production': 'development'];
 		const alexarChainId = axelarChainIdents[destChain];
@@ -341,7 +342,7 @@
 				abi: tokenAbi,
 				address: addresses.tokenAddresses[sourceChain] as `0x${string}`,
 				functionName: 'approve',
-				args: [interchainTokenServiceContractAddress as `0x${string}`, parseEther(transferAmount.toString())]
+				args: [interchainTokenServiceContractAddress as `0x${string}`, parseUnits(transferAmount.toString(), decimals)]
 			});
 
 			const reciept = await wgamiLib.wgamiCore.waitForTransactionReceipt(wgamiLib.wgConfig.wagmiConfig, {
@@ -358,12 +359,12 @@
 
 			await new Promise((resolve) => setTimeout(resolve, 1000));
 
-
 			tx = await wgamiLib.wgamiCore.writeContract(wgamiLib.wgConfig.wagmiConfig, {
 				abi: interchainTokenServiceContractABI,
 				address: interchainTokenServiceContractAddress as `0x${string}`,
 				functionName: 'interchainTransfer',
-				args: [TOKEN_ID, alexarChainId, address, parseEther(transferAmount.toString()), '0x', value]
+				args: [TOKEN_ID, alexarChainId, address, parseUnits(transferAmount.toString(), decimals), '0x', BigInt(value as string)],
+				value: BigInt(value as string)
 			});
 		} catch (txError) {
 			console.error(txError);
@@ -528,8 +529,11 @@
 								>
 							{/if}
 						</div>
-						<div class={`w-1/2 text-right ${isLoadingBalance ? 'blink' : ''}`}>
-							{formatNumber(balance)} <span class="text-[1rem]">{token}</span>
+						<div class={`w-1/2 text-right flex flex-col ${isLoadingBalance ? 'blink' : ''} ${!isConnected ? 'opacity-50' : ''}`}>
+							<span>{formatNumber(balance)} <span class="text-[1rem]">{token}</span></span>
+							{#if !isConnected}
+								<span class="text-[0.65rem] opacity-75 -mt-2">Wallet not connected</span>
+							{/if}
 						</div>
 					</div>
 					<Label class="space-y-2">
@@ -635,7 +639,7 @@
 		<P class="mb-4">Project is a Svelte Kit UI app to bridge ERC20 to multiple chains using Axelar Network for custom non-canonical tokens.</P>
 		<P class="mb-4">Supports testnet and mainnet envoirment, by editing the config file, supports any custom non-canonical, non-warped ERC20 token, also has faucet functionality when is configured to use a faucet contract in development mode.</P>
 		<P class="mb-4">For faucet contract, token sample contract and Axelar Network scripts to deploy token managers you can check this repository</P>
-		<P class="mb-4">This instance is deployed at: yup-bridge.pages.dev</P>
+		<P class="mb-4">This instance is deployed at: erc20-bridge.pages.dev</P>
 
 		<Heading  tag="h2" customSize="text-2xl font-extrabold my-4">Tech stack</Heading>
 

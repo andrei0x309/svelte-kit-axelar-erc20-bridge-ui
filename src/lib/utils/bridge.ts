@@ -3,7 +3,6 @@ import { config } from './config'
 import {
     AxelarQueryAPI,
     Environment,
-    EvmChain,
     GasToken,
   } from "@axelar-network/axelarjs-sdk"
   
@@ -56,11 +55,11 @@ export const gasTokens = {
 
 export const axelarChainIdents = {
     [EVMChainIds.FANTOM_TESTNET]: "Fantom",
-    [EVMChainIds.BSC_TESTNET]: EvmChain.BINANCE,
+    [EVMChainIds.BSC_TESTNET]: 'binance',
     [EVMChainIds.BASE_TESTNET]: 'base-sepolia',
-    [EVMChainIds.ETHEREUM_MAINNET]: EvmChain.ETHEREUM,
-    [EVMChainIds.POLYGON_MAINNET]: EvmChain.POLYGON,
-    [EVMChainIds.BASE_MAINNET]: EvmChain.BASE,
+    [EVMChainIds.ETHEREUM_MAINNET]: "Ethereum",
+    [EVMChainIds.POLYGON_MAINNET]: "Polygon",
+    [EVMChainIds.BASE_MAINNET]: "base",
 }
 
 export async function gasEstimator(sourceChain: number, destChain: number, warning: (mgs: string) => void) {    

@@ -1,10 +1,17 @@
 # Changelog
 
+## - 1.0.4 - dev
+
+- added example package for Axelar scripts to deploy token managers and bridge tokens using the Axelar Network `/axelar-token-example`
+- added sample contracts for a non-canonical ERC20 token and a faucet contract
+- initial deploy at erc20-bridge.pages.dev
+- started to implement on multi-token mode
+
 ## - 1.0.3 - dev
 
-- added option to log every confirmed transaction by adding custom log endpoint in config file
-- added an intial list of axelar tokens
-- added the about page contnet
+- added option to log every confirmed transaction by adding a custom log endpoint in the config file
+- added an initial list of Axelar-supported tokens
+- added the About page content
 
 ## - 1.0.2 - dev
 

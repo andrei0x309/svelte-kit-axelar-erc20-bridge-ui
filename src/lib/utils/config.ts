@@ -10,4 +10,5 @@ export const config = {
     isFaucetEnabled: true && !IS_PROD,
     isSupportLogEnabled: true && !IS_PROD,
     supportLogEndpoint: '',
+    decimals: 18,
 }
