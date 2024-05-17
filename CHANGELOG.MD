@@ -1,5 +1,12 @@
 # Changelog
 
+## - 1.0.5 - dev
+
+- added config flag to configure preferd token when UI in multi-token mode
+- started to split some components into smaller ones
+- added config flag to select prefered token when UI in multi-token mode
+
+
 ## - 1.0.4 - dev
 
 - added example package for Axelar scripts to deploy token managers and bridge tokens using the Axelar Network `/axelar-token-example`

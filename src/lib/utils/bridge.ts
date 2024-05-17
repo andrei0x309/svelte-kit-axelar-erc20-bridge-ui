@@ -5,6 +5,8 @@ import {
     Environment,
     GasToken,
   } from "@axelar-network/axelarjs-sdk"
+
+import AXELAR_TOKENS from '../alexar-data/tokens.json'
   
   const tokenAddresses = {} as Record<number, string>
 
@@ -84,6 +86,28 @@ export async function gasEstimator(sourceChain: number, destChain: number, warni
     sourceChain: number,
     destChain: number,
     amount: string,
+}
+
+export const getChainImage = (chainName: string) => {
+    return `https://raw.githubusercontent.com/axelarnetwork/axelar-configs/main/images/chains/${chainName}.svg`
+}
+
+export const getAxelarTokensDisplayData = () => {
+    const tokens = AXELAR_TOKENS.tokens
+    const tokensDisplayData = {} as Record<string, {prettySymbol: string, svg: string, chainNum: number}>
+    for (const tokenKey of Object.keys(tokens)) {
+        const token = tokens[tokenKey as keyof typeof tokens]
+        tokensDisplayData[tokenKey] = {
+            svg:token.iconUrls.svg,
+            prettySymbol: token.prettySymbol,
+            chainNum: token.chains.length
+        }
+    }
+}
+
+export const getAxelarToken = (tokenId: string) => {
+    const tokens = AXELAR_TOKENS.tokens
+    return tokens[tokenId as keyof typeof tokens]
 }
 
 export const formatNumber = (num: number, digits = 4) => {
