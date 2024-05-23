@@ -1,5 +1,11 @@
 # Changelog
 
+## - 1.0.6 - dev
+
+- added utils to get axelar assets
+- added convertion utils between axelar idntities and chain ids
+- progressed in spliting components into smaller ones
+
 ## - 1.0.5 - dev
 
 - added config flag to configure preferd token when UI in multi-token mode

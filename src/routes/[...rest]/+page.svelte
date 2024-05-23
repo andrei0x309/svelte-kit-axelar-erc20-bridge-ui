@@ -2,7 +2,6 @@
 	import { config } from '$lib/utils/config';
 	import { ChevronDownOutline } from 'flowbite-svelte-icons';
 	import { EVMChainIds, mainnetChains, testnetChains } from '$lib/utils/chains';
-	import { ChainIcons } from '$lib/components/icons/chains';
 	import {
 		Card,
 		Button,
@@ -41,7 +40,10 @@
 		axelarChainIdents,
 		interchainTokenServiceContractAddress,
 		logtoEndpoint,
-		getAxelarToken
+		getAxelarToken,
+		getChainIdForAxelarChainIdent,
+		getChainImage,
+		getAxelarIdentForChainId
 	} from '$lib/utils/bridge';
 	import { tokenAbi } from '$lib/abis/partialCustomERC20';
 	// import { interchainTokenServiceContractABI } from '$lib/abis/partialInterChainTokenService';
@@ -49,8 +51,9 @@
 	import type { historyItem } from '$lib/utils/bridge';
 	import { faucetERC20ABI } from '$lib/abis/partialFaucetERC20';
 	import {interchainTokenServiceContractABI } from '$lib/abis/interChianTokenService';
+	import AboutPage from './AboutPage.svelte';
 
-	const allChains = { ...mainnetChains, ...testnetChains };
+	const allChains = config.isProd ? { } : { ...testnetChains };
 	const availableChains = config.isProd ? mainnetChains : testnetChains;
 	const { 
 		isProd, 
@@ -69,8 +72,8 @@
 
 	let pageTitle = '';
 	let isPageNotFound = false;
-	let sourceChain = multiTokenMode ? getAxelarToken(preferedMultiTokenId)?.chains[0]?. defaultSourceChain
-	let destChain = defaultDestChain;
+	let sourceChain = multiTokenMode ? getChainIdForAxelarChainIdent(getAxelarToken(preferedMultiTokenId)?.chains[0]?.axelarChainId) : defaultSourceChain;
+	let destChain =  multiTokenMode ? getChainIdForAxelarChainIdent(getAxelarToken(preferedMultiTokenId)?.chains[1]?.axelarChainId) : defaultDestChain;
 	let isConnected = false;
 	let isBaseTestnet = sourceChain === EVMChainIds.BASE_TESTNET;
 	const Web3Libs = web3Libs();
@@ -85,7 +88,6 @@
 
 	let balance = 0;
 	let faucetBalance = 0;
-	let faucetRefreshBalanceTimeout = 0;
 	let transferAmount = 0;
 
 	$: pageTitle = routes[$page.url.pathname as keyof typeof routes] || 'Page Not Found';
@@ -442,7 +444,7 @@
 								disabled={!isConnected}
 							>
 								{availableChains[sourceChain]}
-								<svelte:component this={ChainIcons[sourceChain]} class="w-6 ml-2" />
+								<img src={getChainImage(getAxelarIdentForChainId(sourceChain))} alt={getAxelarIdentForChainId(sourceChain)} class="w-6 ml-2" />
 								<ChevronDownOutline class="w-6 h-6 ms-2 text-white dark:text-white" />
 							</Button>
 							{#if isConnected}
@@ -450,7 +452,7 @@
 									{#each Object.keys(availableChains).filter((c) => Number(c) !== destChain && Number(c) !== sourceChain) as chain}
 										<DropdownItem on:click={() => switchSourceChain(Number(chain))}>
 											{allChains[Number(chain)]}
-											<svelte:component this={ChainIcons[Number(chain)]} class="w-6 ml-2 inline" />
+											<img src={getChainImage(getAxelarIdentForChainId(Number(chain)))} alt={getAxelarIdentForChainId(Number(chain))} class="w-6 ml-2" />
 										</DropdownItem>
 									{/each}
 								</Dropdown>
@@ -471,7 +473,7 @@
 								disabled={!isConnected}
 							>
 								{availableChains[destChain]}
-								<svelte:component this={ChainIcons[destChain]} class="w-6 ml-2" />
+								<img src={getChainImage(getAxelarIdentForChainId(destChain))} alt={getAxelarIdentForChainId(destChain)} class="w-6 ml-2" />
 								<ChevronDownOutline class="w-6 h-6 ms-2 text-white dark:text-white" />
 							</Button>
 							{#if isConnected}
@@ -479,7 +481,7 @@
 									{#each Object.keys(availableChains).filter((c) => Number(c) !== destChain && Number(c) !== sourceChain) as chain}
 										<DropdownItem on:click={() => switchDestChain(Number(chain))}>
 											{allChains[Number(chain)]}
-											<svelte:component this={ChainIcons[Number(chain)]} class="w-6 ml-2 inline" />
+											<img src={getChainImage(getAxelarIdentForChainId(Number(chain)))} alt={getAxelarIdentForChainId(Number(chain))} class="w-6 ml-2" />
 										</DropdownItem>
 									{/each}
 								</Dropdown>
@@ -525,7 +527,7 @@
 		
 		<Card class="mx-auto dark:bg-zinc-950 max-w-4xl">
 			{#if $page.url.pathname === '/about'}
-				
+				<AboutPage token={token} />
 		
 			{:else if history.length === 0}
 				<Alert

@@ -1,20 +1,19 @@
 <script lang="ts">
 	import {
-		Card,
 		Table,
 		TableBody,
 		TableBodyCell,
 		TableBodyRow,
 		TableHead,
 		TableHeadCell,
-		Heading,
-		P,
-		A 
 	} from 'flowbite-svelte';
-    import Alert from '$lib/components/Alert.svelte';
+    import type { historyItem } from '$lib/utils/bridge';
+    import {
+		formatNumber,
+	} from '$lib/utils/bridge';
 
-    export let page;
-    export let token;
+	export let history = [] as historyItem[];
+    export let allChains = [];
 
 
 </script>

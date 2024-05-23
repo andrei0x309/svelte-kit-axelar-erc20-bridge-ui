@@ -31,7 +31,48 @@ import AXELAR_TOKENS from '../alexar-data/tokens.json'
   const owner = "0x01Ca6f13E48fC5E231351bA38e7E51A1a7835d8D";
   
   const BASE_FAUCET_TESTNET = '0xBD596d016081454D1868A86441443342a4f3D888'
-  
+
+  export const chainIdToAxelarChainIdent = {
+    "arbitrum": 42161,
+    "Avalanche": 43114,
+    "base": 8453,
+    "binance": 56,
+    "blast": 238,
+    "carbon": 9790,
+    "celo": 42220,
+    "centrifuge": 2031,
+    "Ethereum": 1,
+    "evmos": 9001,
+    "Fantom": 250,
+    "filecoin": 314,
+    "fraxtal": 252,
+    "haqq": 11235,
+    "immutable": 13371,
+    "kava": 2222,
+    "linea": 59144,
+    "mantle": 5000,
+    "Moonbeam": 1284,
+    "optimism": 10,
+    "Polygon": 137,
+    "polygon-zkevm": 1101,
+    "rebus": 1011,
+    "xpla": 37
+  }
+
+  const getAlexarIdentToChainId = () => {
+    const alexarIdentToChainId = {} as Record<number, string>
+      for (const key in chainIdToAxelarChainIdent) {
+           alexarIdentToChainId[chainIdToAxelarChainIdent[key as keyof typeof chainIdToAxelarChainIdent]] = key
+      }
+      return alexarIdentToChainId
+ }
+
+export const alexarIdentToChainId = getAlexarIdentToChainId()
+
+export const getAxelarIdentForChainId = (chainId: number) => {
+    return alexarIdentToChainId[chainId]
+}
+
   export  const getAddresses = () => {
       return {
           tokenAddresses,
@@ -104,6 +145,14 @@ export const getAxelarTokensDisplayData = () => {
         }
     }
 }
+
+export const getChainIdForAxelarChainIdent = (chainIdent: string) => {
+    if (chainIdent in chainIdToAxelarChainIdent) {
+        return chainIdToAxelarChainIdent[chainIdent as keyof typeof chainIdToAxelarChainIdent]
+    }
+    return 0
+}
+
 
 export const getAxelarToken = (tokenId: string) => {
     const tokens = AXELAR_TOKENS.tokens

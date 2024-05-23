@@ -6,11 +6,18 @@
 		NumberInput,
 		ButtonGroup,
 	} from 'flowbite-svelte';
+	import {
+		getAddresses,
+		formatNumber,
+	} from '$lib/utils/bridge';
     import Alert from '$lib/components/Alert.svelte';
 
-    export let page;
-    export let token;
+	export let token;
+
     let faucetAlert: Alert | null = null;
+	export let faucetBalance = 0;
+	let faucetRefreshBalanceTimeout = 0;
+	export let faucetLoading = false;
 
     const connectBase = async () => {
 		if (faucetLoading) return;
@@ -21,7 +28,7 @@
 		});
 		if (!wgamiLib) {
 			faucetAlert?.showErrorMessage('Unable to connect wallet');
-			loading = false;
+			faucetLoading = false;
 			return;
 		}
 		wgamiLib = await checkNetwork({
