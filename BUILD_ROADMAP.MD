@@ -15,3 +15,5 @@
 ## Week 4 (2024-05-25 - 2021-05-29)
 
 - [x] Release with functional URL for public use.
+
+## Release Date (2024-05-29)

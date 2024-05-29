@@ -19,3 +19,5 @@ export const mainnetChains = {
     [EVMChainIds.POLYGON_MAINNET]: 'Polygon Mainnet',
     [EVMChainIds.BASE_MAINNET]: 'Base Mainnet',
 }
+
+export const axelarIdentToChainId = {}

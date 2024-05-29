@@ -2,7 +2,6 @@
 	import { config } from '$lib/utils/config';
 	import { ChevronDownOutline } from 'flowbite-svelte-icons';
 	import { EVMChainIds, mainnetChains, testnetChains } from '$lib/utils/chains';
-	import { ChainIcons } from '$lib/components/icons/chains';
 	import {
 		Card,
 		Button,
@@ -14,15 +13,6 @@
 		DropdownItem,
 		Tabs,
 		TabItem,
-		Table,
-		TableBody,
-		TableBodyCell,
-		TableBodyRow,
-		TableHead,
-		TableHeadCell,
-		Heading,
-		P,
-		A 
 	} from 'flowbite-svelte';
 
 	import { routes } from '$lib/utils/routes';
@@ -49,29 +39,53 @@
 		gasEstimator,
 		axelarChainIdents,
 		interchainTokenServiceContractAddress,
-		logtoEndpoint
+		logtoEndpoint,
+		getAxelarToken,
+		getChainIdForAxelarChainIdent,
+		getChainImage,
+		getAxelarIdentForChainId,
+		alexarIdentToChainId,
+		getAvailableChainsForToken,
+		getTokensWithExcluded,
 	} from '$lib/utils/bridge';
 	import { tokenAbi } from '$lib/abis/partialCustomERC20';
 	// import { interchainTokenServiceContractABI } from '$lib/abis/partialInterChainTokenService';
 	import { formatUnits, parseUnits } from 'viem';
 	import type { historyItem } from '$lib/utils/bridge';
-	import { faucetERC20ABI } from '$lib/abis/partialFaucetERC20';
 	import {interchainTokenServiceContractABI } from '$lib/abis/interChianTokenService';
+	import AboutPage from './AboutPage.svelte';
+	import HistoryPage from './LocalHistoryPage.svelte';
+	import FaucetPage from './FaucetPage.svelte';
+	import { get } from 'svelte/store';
 
-	const allChains = { ...mainnetChains, ...testnetChains };
-	const availableChains = config.isProd ? mainnetChains : testnetChains;
-	const { isProd, isFaucetEnabled, defaultDestChain, defaultSourceChain, isSupportLogEnabled, token, supportLogEndpoint, decimals } = config;
-	const minAmount = isProd ? 5 : 25;
+	const allChains = config.isProd ? alexarIdentToChainId : testnetChains;
 
+	const { 
+		isProd, 
+		isFaucetEnabled, 
+		defaultDestChain, 
+		defaultSourceChain, 
+		isSupportLogEnabled,
+		preferedMultiTokenId,
+		supportLogEndpoint, 
+		multiTokenMode,
+		isMinAmountEnabled,
+		minAmount
+	} = config;
+
+	let selectedToken = preferedMultiTokenId;
+ 
 	let pageTitle = '';
 	let isPageNotFound = false;
-	let sourceChain = defaultSourceChain;
-	let destChain = defaultDestChain;
+	let availableChains = config.isProd ? getAvailableChainsForToken(selectedToken) : testnetChains;
+	let sourceChain = multiTokenMode ? getChainIdForAxelarChainIdent(getAxelarToken(selectedToken)?.chains[0]?.axelarChainId) : defaultSourceChain;
+	let destChain =  multiTokenMode ? getChainIdForAxelarChainIdent(getAxelarToken(selectedToken)?.chains[1]?.axelarChainId) : defaultDestChain;
+	let tokenSymbol = multiTokenMode ? getAxelarToken(selectedToken).prettySymbol : config.token;
+	let decimals = multiTokenMode ? getAxelarToken(selectedToken).decimals : config.decimals;
 	let isConnected = false;
 	let isBaseTestnet = sourceChain === EVMChainIds.BASE_TESTNET;
 	const Web3Libs = web3Libs();
 	let alert: Alert | null = null;
-	let faucetAlert: Alert | null = null;
 	let isActive = '/';
 	let loading = false;
 	let faucetLoading = false;
@@ -82,7 +96,6 @@
 
 	let balance = 0;
 	let faucetBalance = 0;
-	let faucetRefreshBalanceTimeout = 0;
 	let transferAmount = 0;
 
 	$: pageTitle = routes[$page.url.pathname as keyof typeof routes] || 'Page Not Found';
@@ -128,6 +141,26 @@
 		sourceChain = chain;
 		setFocusOnInput();
 		loading = false;
+		return true;
+	};
+
+	const switchSelectedToken = async (token: string) => {
+		const switchTo = getChainIdForAxelarChainIdent(getAxelarToken(token)?.chains[0]?.axelarChainId)
+		const needToSwitch = sourceChain !== switchTo;
+		if(needToSwitch) {
+			const switched = await switchSourceChain(switchTo)
+			if (!switched) return;
+		} 
+		selectedToken = token;
+		decimals = getAxelarToken(selectedToken).decimals;
+		availableChains = getAvailableChainsForToken(selectedToken);
+		destChain =  multiTokenMode ? getChainIdForAxelarChainIdent(getAxelarToken(selectedToken)?.chains[1]?.axelarChainId) : defaultDestChain;
+		isConnected = await checkIsConnected();
+		tokenSymbol = multiTokenMode ? getAxelarToken(selectedToken).prettySymbol : config.token;
+		if(!needToSwitch) {
+			await getBalance()
+			setFocusOnInput();
+		}
 	};
 
 	const switchDestChain = async (chain: number) => {
@@ -143,7 +176,7 @@
 		if (isLoadingBalance) return;
 		isLoadingBalance = true;
 		const addresses = getAddresses();
-		const tokenAddress = addresses.tokenAddresses[chain];
+		const tokenAddress = getAxelarToken(selectedToken)?.chains.find((c) => c.axelarChainId.toLowerCase() === getAxelarIdentForChainId(chain).toLowerCase())?.tokenAddress;
 		const tokenAddressFaucet = addresses.tokenAddresses[EVMChainIds.BASE_TESTNET];
 		let wgamiLib = await prepareForTransaction({
 			localWeb3Libs: Web3Libs		
@@ -186,7 +219,6 @@
 				})) as null | bigint;
 
 				balance = Number(formatUnits(chainBalance ? chainBalance : 0n, decimals));
-				console.log('balance', balance);
 			} catch (error) {
 				// ignore
 			}
@@ -254,55 +286,19 @@
 		}
 	};
 
-	const connectBase = async () => {
-		if (faucetLoading) return;
-		faucetLoading = true;
-		let wgamiLib = await prepareForTransaction({
-			localWeb3Libs: Web3Libs,
-			stackAlertWarning: faucetAlert?.showWarningMessage
-		});
-		if (!wgamiLib) {
-			faucetAlert?.showErrorMessage('Unable to connect wallet');
-			loading = false;
-			return;
-		}
-		wgamiLib = await checkNetwork({
-			wgamiLib,
-			stackAlertWarning: alert?.showWarningMessage,
-			switchTo: EVMChainIds.BASE_TESTNET
-		});
-		if (!wgamiLib) {
-			faucetAlert?.showErrorMessage('User rejected switch network');
-			faucetLoading = false;
-			return;
-		}
-		await checkIsConnected();
-
-		if (isBaseTestnet) {
-			sourceChain = EVMChainIds.BASE_TESTNET;
-		} else {
-			faucetAlert?.showErrorMessage('Unable to connect wallet');
-		}
-		faucetLoading = false;
-
-		if (isBaseTestnet) {
-			await getBalance(EVMChainIds.BASE_TESTNET);
-		}
-	};
-
 	const execBridge = async () => {
 		if (!isConnected) {
 			alert?.showErrorMessage('Please connect wallet');
 			return;
 		}
-		// if (transferAmount < minAmount) {
-		// 	alert?.showErrorMessage(`Minimum amount is ${minAmount} ${token}`);
-		// 	return;
-		// }
-		// if (transferAmount > balance) {
-		// 	alert?.showErrorMessage(`Transfer amount exceeds available balance`);
-		// 	return;
-		// }
+		if (isMinAmountEnabled && (transferAmount < minAmount)) {
+			alert?.showErrorMessage(`Minimum amount is ${minAmount} ${tokenSymbol}`);
+			return;
+		}
+		if (transferAmount > balance) {
+			alert?.showErrorMessage(`Transfer amount exceeds available balance`);
+			return;
+		}
 		if (sourceChain === destChain) {
 			alert?.showErrorMessage('Source and destination chain cannot be the same');
 			return;
@@ -333,9 +329,21 @@
 		const address = (await wgamiLib.wgamiCore.getAccount(wgamiLib.wgConfig.wagmiConfig)).address;
 
 		let tx: Awaited<ReturnType<typeof wgamiLib.wgamiCore.writeContract>> | null = null;
+		
+        const approvalNeeded = [ 'mintBurnFrom', 'lockUnlock']
+
+		let needsApproval = false
+
+		getAxelarToken(selectedToken).chains.forEach((chain) => {
+			if (chain.axelarChainId === getAxelarIdentForChainId(sourceChain)) {
+				if (approvalNeeded.includes(chain.tokenManagerType)) {
+					needsApproval = true
+				}
+			}
+		})
 
 		try {
-
+			if (needsApproval) {
 			alert?.showInfoMessage('Waiting for approve transaction to be confirmed', true);
 
 			const approveTx = await wgamiLib.wgamiCore.writeContract(wgamiLib.wgConfig.wagmiConfig, {
@@ -358,6 +366,7 @@
 			}
 
 			await new Promise((resolve) => setTimeout(resolve, 1000));
+			}
 
 			tx = await wgamiLib.wgamiCore.writeContract(wgamiLib.wgConfig.wagmiConfig, {
 				abi: interchainTokenServiceContractABI,
@@ -387,7 +396,10 @@
 			destChain,
 			amount: transferAmount.toFixed(4),
 			tx,
-			date: new Date().toISOString()
+			date: new Date().toISOString(),
+			tokenSvg: getAxelarToken(selectedToken).iconUrls.svg,
+			tokenSymbol: getAxelarToken(selectedToken).prettySymbol,
+			tokenDecimals: getAxelarToken(selectedToken).decimals
 		});
 
 		if (isSupportLogEnabled && supportLogEndpoint !== '') {
@@ -409,81 +421,6 @@
 		loading = false;
 	};
 
-	const execFaucet = async () => {
-		if (!isBaseTestnet) {
-			faucetAlert?.showErrorMessage('Please connect wallet');
-			return;
-		}
-		if (faucetLoading) return;
-		faucetLoading = true;
-		let wgamiLib = await prepareForTransaction({
-			localWeb3Libs: Web3Libs,
-			stackAlertWarning: faucetAlert?.showWarningMessage
-		});
-		if (!wgamiLib) {
-			faucetLoading = false;
-			return;
-		}
-		wgamiLib = await checkNetwork({
-			wgamiLib,
-			stackAlertWarning: faucetAlert?.showWarningMessage,
-			switchTo: EVMChainIds.BASE_TESTNET
-		});
-		if (!wgamiLib) {
-			faucetLoading = false;
-			faucetAlert?.showErrorMessage('User rejected switch network');
-			return;
-		}
-		sourceChain = EVMChainIds.BASE_TESTNET;
-
-		const addresses = getAddresses();
-		let tx: Awaited<ReturnType<typeof wgamiLib.wgamiCore.writeContract>> | null = null;
-		try {
-			console.log('faucet', addresses.BASE_FAUCET_TESTNET, sourceChain);
-
-			tx = await wgamiLib.wgamiCore.writeContract(wgamiLib.wgConfig.wagmiConfig, {
-				abi: faucetERC20ABI,
-				address: addresses.BASE_FAUCET_TESTNET as `0x${string}`,
-				functionName: 'faucet'
-			});
-		} catch (txError) {
-			console.error(txError);
-			if (String(txError).includes('Claim executed to recently')) {
-				const strErr = String(txError);
-				const errPart = strErr.split('reason:')[1] || '';
-				const err = errPart.split('another claim')[0] + 'another claim';
-				faucetAlert?.showErrorMessage(err);
-				faucetLoading = false;
-				return;
-			}
-		}
-
-		if (!tx) {
-			faucetAlert?.showErrorMessage('Transaction failed');
-			faucetLoading = false;
-			return;
-		}
-
-		transferAmount = 0;
-		faucetRefreshBalanceTimeout = 6;
-		const interval = setInterval(async () => {
-			faucetAlert?.showSuccessMessage(
-				'You got test tokens, refreshing balance in ' + faucetRefreshBalanceTimeout + ' seconds'
-			);
-			faucetRefreshBalanceTimeout--;
-			if (faucetRefreshBalanceTimeout === 0) {
-				clearInterval(interval);
-				faucetAlert?.showSuccessMessage('Refreshing balance...');
-				await getBalance(EVMChainIds.BASE_TESTNET);
-				setTimeout(() => {
-					faucetAlert?.showSuccessMessage('Balance refreshed');
-				}, 100);
-			}
-		}, 1000);
-
-		faucetLoading = false;
-	};
-
 	const shallowNavigate = (url: string) => {
 		if ($page.url.pathname !== url) {
 			goto(url);
@@ -495,8 +432,8 @@
 </script>
 
 <svelte:head>
-	<title>Bridge {token} - {pageTitle}</title>
-	<meta name="description" content={`Bridge token ${token} to multiple blockchains`} />
+	<title>Bridge {tokenSymbol} - {pageTitle}</title>
+	<meta name="description" content={`Bridge token ${tokenSymbol} to multiple blockchains`} />
 </svelte:head>
 
 <Tabs
@@ -520,6 +457,32 @@
 
 			<Card class={`mx-auto dark:bg-zinc-950 ${loading ? 'blink' : ''}`}>
 				<form class="flex flex-col space-y-6" action="/">
+
+					<Label class="space-y-2 flex flex-col items-center">
+						<span>Select Token</span>
+						<ButtonGroup class="w-full justify-center">
+							<Button
+								color="none"
+								class="flex-shrink-0 text-[0.85rem] text-gray-900 bg-gray-100 border border-gray-300 dark:border-gray-700 dark:text-white hover:bg-gray-200 focus:ring-gray-300 dark:bg-zinc-900 dark:hover:bg-zinc-700 dark:focus:ring-gray-800"
+								disabled={!isConnected}
+							>
+								{getAxelarToken(selectedToken).prettySymbol}
+								<img src={getAxelarToken(selectedToken).iconUrls.svg} alt={getAxelarToken(selectedToken).prettySymbol} class="w-6 ml-2 inline-block" />
+								<ChevronDownOutline class="w-6 h-6 ms-2 text-white dark:text-white" />
+							</Button>
+							{#if isConnected}
+								<Dropdown>
+									{#each Object.entries(getTokensWithExcluded(selectedToken)) as [key, token]}
+										<DropdownItem on:click={() => switchSelectedToken(key)}>
+											{token.prettySymbol}
+											<img src={token.iconUrls.svg} alt={token.prettySymbol} class="w-6 ml-2 inline-block" />
+										</DropdownItem>
+									{/each}
+								</Dropdown>
+							{/if}
+						</ButtonGroup>
+					</Label>
+
 					<div class="flex justify-between text-xl font-medium text-gray-900 dark:text-white">
 						<div class="w-1/2 flex flex-col">
 							<span>Available</span>
@@ -530,7 +493,7 @@
 							{/if}
 						</div>
 						<div class={`w-1/2 text-right flex flex-col ${isLoadingBalance ? 'blink' : ''} ${!isConnected ? 'opacity-50' : ''}`}>
-							<span>{formatNumber(balance)} <span class="text-[1rem]">{token}</span></span>
+							<span>{formatNumber(balance)} <span class="text-[1rem]">{tokenSymbol}</span></span>
 							{#if !isConnected}
 								<span class="text-[0.65rem] opacity-75 -mt-2">Wallet not connected</span>
 							{/if}
@@ -540,7 +503,7 @@
 						<span>Source Chain</span>
 						<ButtonGroup class="w-full">
 							<NumberInput
-								placeholder={`${'amount'} ${token}`}
+								placeholder={`${'amount'} ${tokenSymbol}`}
 								bind:value={transferAmount}
 								id="source-input"
 							/>
@@ -550,15 +513,15 @@
 								disabled={!isConnected}
 							>
 								{availableChains[sourceChain]}
-								<svelte:component this={ChainIcons[sourceChain]} class="w-6 ml-2" />
+								<img src={getChainImage(getAxelarIdentForChainId(sourceChain))} alt={getAxelarIdentForChainId(sourceChain)} class="w-6 ml-2 inline-block" />
 								<ChevronDownOutline class="w-6 h-6 ms-2 text-white dark:text-white" />
 							</Button>
 							{#if isConnected}
 								<Dropdown>
 									{#each Object.keys(availableChains).filter((c) => Number(c) !== destChain && Number(c) !== sourceChain) as chain}
 										<DropdownItem on:click={() => switchSourceChain(Number(chain))}>
-											{allChains[Number(chain)]}
-											<svelte:component this={ChainIcons[Number(chain)]} class="w-6 ml-2 inline" />
+											{availableChains[Number(chain)]}
+											<img src={getChainImage(getAxelarIdentForChainId(Number(chain)))} alt={getAxelarIdentForChainId(Number(chain))} class="w-6 ml-2 inline-block" />
 										</DropdownItem>
 									{/each}
 								</Dropdown>
@@ -570,7 +533,7 @@
 						<ButtonGroup class="w-full">
 							<NumberInput
 								disabled
-								placeholder={`${'amount'} ${token}`}
+								placeholder={`${'amount'} ${tokenSymbol}`}
 								bind:value={transferAmount}
 							/>
 							<Button
@@ -579,15 +542,15 @@
 								disabled={!isConnected}
 							>
 								{availableChains[destChain]}
-								<svelte:component this={ChainIcons[destChain]} class="w-6 ml-2" />
+								<img src={getChainImage(getAxelarIdentForChainId(destChain))} alt={getAxelarIdentForChainId(destChain)} class="w-6 ml-2 inline-block" />
 								<ChevronDownOutline class="w-6 h-6 ms-2 text-white dark:text-white" />
 							</Button>
 							{#if isConnected}
 								<Dropdown>
 									{#each Object.keys(availableChains).filter((c) => Number(c) !== destChain && Number(c) !== sourceChain) as chain}
 										<DropdownItem on:click={() => switchDestChain(Number(chain))}>
-											{allChains[Number(chain)]}
-											<svelte:component this={ChainIcons[Number(chain)]} class="w-6 ml-2 inline" />
+											{availableChains[Number(chain)]}
+											<img src={getChainImage(getAxelarIdentForChainId(Number(chain)))} alt={getAxelarIdentForChainId(Number(chain))} class="w-6 ml-2 inline-block" />
 										</DropdownItem>
 									{/each}
 								</Dropdown>
@@ -603,19 +566,10 @@
 						>
 					{:else}
 						<Button type="button" class="w-full" on:click={() => execBridge()}
-							>Bridge {token}</Button
+							>Bridge {tokenSymbol}</Button
 						>
 					{/if}
 
-					<div class="text-sm font-medium text-gray-500 dark:text-gray-300">
-					WIP<a
-							href="WIP"
-							rel="extrenal"
-							class="text-primary-700 hover:underline dark:text-primary-500"
-						>
-							WIP
-						</a>
-					</div>
 				</form>
 			</Card>
 		{/if}
@@ -630,30 +584,11 @@
 			<HistoryIcon class="w-6 h-6" />
 			History
 		</div>
+		
 		<Card class="mx-auto dark:bg-zinc-950 max-w-4xl">
 			{#if $page.url.pathname === '/about'}
-				
-			<Heading  tag="h2" customSize="text-2xl font-extrabold mb-4">svelte-kit-axelar-bridge-erc20</Heading>
-		<P class="mb-8">This a <A href="https://github.com/andrei0x309/svelte-kit-axelar-erc20-bridge-ui">open-source</A> community maintained UI for the Axelar Network bridge for ERC20 tokens.</P>
-		<P class="mb-4">Current configured token symbol: <b>{token}</b></P>
-		<P class="mb-4">Project is a Svelte Kit UI app to bridge ERC20 to multiple chains using Axelar Network for custom non-canonical tokens.</P>
-		<P class="mb-4">Supports testnet and mainnet envoirment, by editing the config file, supports any custom non-canonical, non-warped ERC20 token, also has faucet functionality when is configured to use a faucet contract in development mode.</P>
-		<P class="mb-4">For faucet contract, token sample contract and Axelar Network scripts to deploy token managers you can check this repository</P>
-		<P class="mb-4">This instance is deployed at: erc20-bridge.pages.dev</P>
-
-		<Heading  tag="h2" customSize="text-2xl font-extrabold my-4">Tech stack</Heading>
-
-		<ul>
-			<li>Svelte Kit</li>
-			<li>Tailwind CSS</li>
-			<li>Flowbite Svelte</li>
-			<li>Axelar SDK</li>
-			<li>Wagmi SDK</li>
-			<li>Web3Modal with all wallets enabeled incuding Coinbase Wallet</li>
-			<li>Viem</li>
-			<li>Vite</li>
-		</ul>
-
+				<AboutPage/>
+		
 			{:else if history.length === 0}
 				<Alert
 					isDismissable={false}
@@ -662,48 +597,10 @@
 					currentType="info"
 				/>
 			{:else}
-				<Table hoverable={true}>
-					<TableHead>
-						<TableHeadCell>Date</TableHeadCell>
-						<TableHeadCell>Source Chian</TableHeadCell>
-						<TableHeadCell>Destination Chain</TableHeadCell>
-						<TableHeadCell>Amount</TableHeadCell>
-						<TableHeadCell>View Tx</TableHeadCell>
-					</TableHead>
-					<TableBody tableBodyClass="divide-y">
-						{#each history as item}
-							<TableBodyRow>
-								<TableBodyCell>{item.date}</TableBodyCell>
-								<TableBodyCell
-									><svelte:component
-										this={ChainIcons[Number(item.sourceChain)]}
-										class="w-6 ml-2 inline"
-									/>
-									{allChains[Number(item.sourceChain)]}</TableBodyCell
-								>
-								<TableBodyCell
-									><svelte:component
-										this={ChainIcons[Number(item.destChain)]}
-										class="w-6 ml-2 inline"
-									/>
-									{allChains[Number(item.destChain)]}</TableBodyCell
-								>
-								<TableBodyCell>{formatNumber(Number(item.amount))}</TableBodyCell>
-								<TableBodyCell>
-									<a
-										href={`https://${isProd ? '' : 'testnet.'}axelarscan.io/gmp/${item.tx}`}
-										rel="extrenal"
-										target="blank"
-										class="font-medium text-primary-600 hover:underline dark:text-primary-500"
-										>View</a
-									>
-								</TableBodyCell>
-							</TableBodyRow>
-						{/each}
-					</TableBody>
-				</Table>
+			<HistoryPage history={history} isProd={isProd} availableChains={availableChains} />
 			{/if}
 		</Card>
+
 	</TabItem>
 
 	{#if isFaucetEnabled}
@@ -715,91 +612,7 @@
 				<FaucetIcon class="w-6 h-6 mr-2" />
 				Faucet
 			</div>
-
-			<Alert
-				bind:this={faucetAlert}
-				isVisibile={false}
-				class="mb-4 max-w-96 mx-auto dark:bg-zinc-950"
-			/>
-
-			<Alert
-				class="mx-auto dark:bg-zinc-950 mb-1 max-w-96"
-				isDismissable={false}
-				isVisibile={true}
-				message="Use this to get test tokens only enabled when in development envoirment!"
-				currentType="info"
-			/>
-
-			<Alert
-				class="mx-auto dark:bg-zinc-950 mb-2 max-w-96"
-				isDismissable={false}
-				isVisibile={true}
-				message="Faucet contract allows only 1 TX per 10 minutes!!!"
-				currentType="warning"
-			/>
-
-			<Card class={`mx-auto dark:bg-zinc-950 ${faucetLoading ? 'blink' : ''}`}>
-				<form class="flex flex-col space-y-6" action="/">
-					<div class="flex justify-between text-xl font-medium text-gray-900 dark:text-white">
-						<div class="w-1/2 flex flex-col">
-							<span>Available</span>
-							{#if address}
-								<span class="text-[0.65rem] opacity-75 -mt-2"
-									>Account: {address.slice(0, 6) + '...' + address.slice(-3)}</span
-								>
-							{/if}
-						</div>
-						<div class={`w-1/2 text-right ${isLoadingBalance ? 'blink' : ''}`}>
-							{formatNumber(faucetBalance)} <span class="text-[1rem]">{token}</span>
-						</div>
-					</div>
-					<Label class="space-y-2">
-						<span>Source Chain</span>
-						<ButtonGroup class="w-full">
-							<NumberInput value={5000} disabled />
-							<Button
-								color="none"
-								class="flex-shrink-0 text-[0.85rem] text-gray-900 bg-gray-100 border border-gray-300 dark:border-gray-700 dark:text-white  hover:cursor-default focus:ring-gray-300 dark:bg-zinc-900  dark:focus:ring-gray-800"
-							>
-								{availableChains[EVMChainIds.BASE_TESTNET]}
-								<svelte:component this={ChainIcons[EVMChainIds.BASE_TESTNET]} class="w-6 ml-2" />
-							</Button>
-						</ButtonGroup>
-					</Label>
-					<Label class="space-y-2">
-						<span>Destination Chain</span>
-						<ButtonGroup class="w-full">
-							<NumberInput value={5000} disabled />
-							<Button
-								color="none"
-								class="flex-shrink-0 text-[0.85rem] text-gray-900 bg-gray-100 border border-gray-300 dark:border-gray-700 dark:text-white hover:cursor-default focus:ring-gray-300 dark:bg-zinc-900 dark:focus:ring-gray-800"
-							>
-								{availableChains[EVMChainIds.BASE_TESTNET]}
-								<svelte:component this={ChainIcons[EVMChainIds.BASE_TESTNET]} class="w-6 ml-2" />
-							</Button>
-						</ButtonGroup>
-					</Label>
-					{#if !isBaseTestnet}
-						<Button type="button" class="w-full" on:click={() => connectBase()}
-							>Connect Wallet</Button
-						>
-					{:else}
-						<Button type="button" class="w-full" on:click={() => execFaucet()}
-							>Get TestNet {token}</Button
-						>
-					{/if}
-
-					<div class="text-sm font-medium text-gray-500 dark:text-gray-300">
-						Want an Yup account? <a
-							href="https://app.yup.io/"
-							rel="extrenal"
-							class="text-primary-700 hover:underline dark:text-primary-500"
-						>
-							Create account
-						</a>
-					</div>
-				</form>
-			</Card>
+			
 		</TabItem>
 	{/if}
 </Tabs>

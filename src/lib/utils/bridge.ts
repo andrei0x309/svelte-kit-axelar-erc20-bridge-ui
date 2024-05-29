@@ -5,6 +5,8 @@ import {
     Environment,
     GasToken,
   } from "@axelar-network/axelarjs-sdk"
+
+import AXELAR_TOKENS from '../alexar-data/tokens.json'
   
   const tokenAddresses = {} as Record<number, string>
 
@@ -29,7 +31,73 @@ import {
   const owner = "0x01Ca6f13E48fC5E231351bA38e7E51A1a7835d8D";
   
   const BASE_FAUCET_TESTNET = '0xBD596d016081454D1868A86441443342a4f3D888'
-  
+
+export const getTokensWithExcluded = (tokenId: string) => {
+    const axelarTokens = AXELAR_TOKENS.tokens;
+    const tokensKeys = Object.keys(axelarTokens);
+    const defaultExcluded = ['0xc5732d51934f41dba117ae77c628754853cbdf7655baa4cc9f863e575464e907'].map((t) => t.toLowerCase())
+    const tokensNewKeys = tokensKeys.filter((t) => t.toLowerCase() !== tokenId.toLowerCase() && !defaultExcluded.includes(t.toLowerCase()));
+    const tokens = tokensNewKeys.reduce((acc, key) => {
+        acc[key] = axelarTokens[key as keyof typeof axelarTokens];
+        return acc;
+    }, {} as Record<string, typeof axelarTokens[keyof typeof axelarTokens]>);
+    return tokens;
+}
+
+  export const axelarTokens = getTokensWithExcluded('')
+
+  export const chainIdToAxelarChainIdent = {
+    "arbitrum": 42161,
+    "Avalanche": 43114,
+    "base": 8453,
+    "binance": 56,
+    "blast": 238,
+    "carbon": 9790,
+    "celo": 42220,
+    "centrifuge": 2031,
+    "Ethereum": 1,
+    "evmos": 9001,
+    "Fantom": 250,
+    "filecoin": 314,
+    "fraxtal": 252,
+    "haqq": 11235,
+    "immutable": 13371,
+    "kava": 2222,
+    "linea": 59144,
+    "mantle": 5000,
+    "scroll": 534352,
+    "Moonbeam": 1284,
+    "optimism": 10,
+    "Polygon": 137,
+    "polygon-zkevm": 1101,
+    "rebus": 1011,
+    "xpla": 37
+  }
+
+const getAlexarIdentToChainId = () => {
+    const alexarIdentToChainId = {} as Record<number, string>
+      for (const key in chainIdToAxelarChainIdent) {
+           alexarIdentToChainId[chainIdToAxelarChainIdent[key as keyof typeof chainIdToAxelarChainIdent]] = key
+      }
+      return alexarIdentToChainId
+ }
+
+export const alexarIdentToChainId = getAlexarIdentToChainId()
+
+const getChainIdToAxelarChainIdentLower = () => {
+    const chainIdToAxelarChainIdentLower = {} as Record<string, number>
+    for (const key in chainIdToAxelarChainIdent) {
+        chainIdToAxelarChainIdentLower[key.toLowerCase()] = chainIdToAxelarChainIdent[key as keyof typeof chainIdToAxelarChainIdent]
+    }
+    return chainIdToAxelarChainIdentLower
+}
+
+export const chainIdToAxelarChainIdentLower = getChainIdToAxelarChainIdentLower()
+
+export const getAxelarIdentForChainId = (chainId: number) => {
+    return alexarIdentToChainId[chainId]
+}
+
   export  const getAddresses = () => {
       return {
           tokenAddresses,
@@ -84,6 +152,55 @@ export async function gasEstimator(sourceChain: number, destChain: number, warni
     sourceChain: number,
     destChain: number,
     amount: string,
+    tokenSymbol: string,
+    tokenSvg: string,
+    tokenDecimals: number,
+}
+
+export const getChainImage = (chainName: string) => {
+    switch(chainName.toLowerCase()) {
+        case 'blast':
+            return 'https://raw.githubusercontent.com/0xsquid/assets/main/images/tokens/blast.svg'
+        case 'polygon-zkevm':
+            return 'https://raw.githubusercontent.com/axelarnetwork/axelar-configs/main/images/chains/polygon.svg'
+        case 'fraxtal':
+            return 'https://raw.githubusercontent.com/0xsquid/assets/main/images/tokens/fraxtal.svg'
+    }
+    return `https://raw.githubusercontent.com/axelarnetwork/axelar-configs/main/images/chains/${chainName.toLowerCase()}.svg`
+}
+
+export const getAxelarTokensDisplayData = () => {
+    const tokens = AXELAR_TOKENS.tokens
+    const tokensDisplayData = {} as Record<string, {prettySymbol: string, svg: string, chainNum: number}>
+    for (const tokenKey of Object.keys(tokens)) {
+        const token = tokens[tokenKey as keyof typeof tokens]
+        tokensDisplayData[tokenKey] = {
+            svg:token.iconUrls.svg,
+            prettySymbol: token.prettySymbol,
+            chainNum: token.chains.length
+        }
+    }
+}
+
+export const getChainIdForAxelarChainIdent = (chainIdent: string) => {
+    return chainIdToAxelarChainIdent[chainIdent as keyof typeof chainIdToAxelarChainIdent] ?? chainIdToAxelarChainIdentLower[chainIdent.toLowerCase()] ?? 0
+}
+
+export const getAvailableChainsForToken = (tokenId: string) => {
+    const tokens = AXELAR_TOKENS.tokens
+    const chains = tokens[tokenId as keyof typeof tokens].chains
+    const chainsMap = {} as Record<number, string>
+    chains.forEach((chain) => {
+        const chainId = getChainIdForAxelarChainIdent(chain.axelarChainId)
+        chainsMap[chainId] = chain.axelarChainId
+    })
+    return chainsMap
+}
+
+
+export const getAxelarToken = (tokenId: string) => {
+    const tokens = AXELAR_TOKENS.tokens
+    return tokens[tokenId as keyof typeof tokens]
 }
 
 export const formatNumber = (num: number, digits = 4) => {
