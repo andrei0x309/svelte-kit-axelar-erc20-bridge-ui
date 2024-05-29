@@ -6,11 +6,14 @@ import { Footer, FooterCopyright, FooterLinkGroup, FooterLink, FooterBrand, Foot
 import { FacebookSolid, GithubSolid, DiscordSolid, TwitterSolid } from 'flowbite-svelte-icons';
 import { config } from "$lib/utils/config";
 import TransferIcon from '$lib/components/icons/TransferIcon.svelte';
+import Logo from '$lib/images/icons/erc20-bridge-logo.png';
+
 
 </script>
   <div class="relative">
 	<Navbar class="px-2 sm:px-4 py-2.5 w-full border-b dark:bg-zinc-950">
 	  <NavBrand href="/">
+		<img src={Logo} alt="Logo" class="w-10 h-10 pt-2 pr-2" />
 		<div class="self-center whitespace-nowrap text-xl font-semibold dark:text-white flex flex-col mt-5">
 			<span>ERC20 Bridge</span>
 			<span class="text-[0.6rem] opacity-60 -mt-2">An axelar network community bridge</span>
@@ -31,29 +34,33 @@ import TransferIcon from '$lib/components/icons/TransferIcon.svelte';
 	</div>
 	  <Footer footerType="socialmedia" class="dark:bg-zinc-950">
 		<div class="md:flex md:justify-between">
-		  <div class="mb-6 md:mb-0">
-			<TransferIcon class="w-10 h-10" />
+		  <div class="mb-6 md:mb-0 flex items-center justify-center">
+			<TransferIcon class="ml-10 w-10 h-10 mt-4 mr-2 p-1" />
+			<div class="self-center whitespace-nowrap text-[1rem] font-semibold dark:text-white flex flex-col mt-5">
+				<span>ERC20 Bridge</span>
+				<span class="text-[0.5rem] opacity-60 -mt-1">An axelar network community bridge</span>
+			</div>
 		  </div>
 		  <div class="grid grid-cols-2 gap-8 sm:gap-6 sm:grid-cols-3">
 			<div>
 			  <h2 class="mb-6 text-sm font-semibold text-gray-900 uppercase dark:text-white">Resources</h2>
 			  <FooterLinkGroup>
-				<FooterLink liClass="mb-4"><a href="WIP">Docs</a></FooterLink>
-				<FooterLink liClass="mb-4"><a href="WIP">GitHub</a></FooterLink>
+				<FooterLink liClass="mb-4"><a href="https://docs-erc20-bridge.flashsoft.eu">Docs</a></FooterLink>
+				<FooterLink liClass="mb-4"><a href="https://github.com/andrei0x309/svelte-kit-axelar-erc20-bridge-ui">GitHub</a></FooterLink>
 			  </FooterLinkGroup>
 			</div>
 			<div>
 			  <h2 class="mb-6 text-sm font-semibold uppercase text-gray-900 dark:text-white">Find me on:</h2>
 			  <FooterLinkGroup>
-				<FooterLink liClass="mb-4"><a href="WIP">Warpcast</a></FooterLink>
-				<FooterLink liClass="mb-4"><a href="WIP">Discord</a></FooterLink>
+				<FooterLink liClass="mb-4"><a href="https://warpcast.com/andrei0x309">Warpcast</a></FooterLink>
+				<FooterLink liClass="mb-4"><a href="https://hey.xyz/u/andrei0x309">Lens</a></FooterLink>
 			  </FooterLinkGroup>
 			</div>
 			<div>
-			  <h2 class="mb-6 text-sm font-semibold uppercase text-gray-900 dark:text-white">Read on:</h2>
+			  <h2 class="mb-6 text-sm font-semibold uppercase text-gray-900 dark:text-white">Blogs:</h2>
 			  <FooterLinkGroup>
-				<FooterLink liClass="mb-4" href="/"><a href="https://WIP">Link 1</a></FooterLink>
-				<FooterLink liClass="mb-4" href="/"><a href="https://WIP">Link 2</a></FooterLink>
+				<FooterLink liClass="mb-4" href="/"><a href="https://blog.flashsoft.eu/">Blog</a></FooterLink>
+				<FooterLink liClass="mb-4" href="/"><a href="https://mirror.xyz/andrei0x309.eth">Mirror</a></FooterLink>
 			  </FooterLinkGroup>
 			</div>
 		  </div>

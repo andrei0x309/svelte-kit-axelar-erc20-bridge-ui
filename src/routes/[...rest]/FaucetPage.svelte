@@ -11,8 +11,26 @@
 		formatNumber,
 	} from '$lib/utils/bridge';
     import Alert from '$lib/components/Alert.svelte';
+	import { faucetERC20ABI } from '$lib/abis/partialFaucetERC20';
+	import {
+		prepareForTransaction,
+		checkNetwork,
+	} from '$lib/utils/wallet';
+	import { EVMChainIds } from '$lib/utils/chains';
+	import { ChainIcons } from '$lib/components/icons/chains';
 
 	export let token;
+	export let isBaseTestnet
+	export let Web3Libs
+	export let checkIsConnected
+	export let sourceChain
+	export let getBalance
+	export let address
+	export let availableChains = {} as Record<number, string>;
+	export let isLoadingBalance = false;
+	export let transferAmount = 0;
+	
+
 
     let faucetAlert: Alert | null = null;
 	export let faucetBalance = 0;
@@ -33,7 +51,7 @@
 		}
 		wgamiLib = await checkNetwork({
 			wgamiLib,
-			stackAlertWarning: alert?.showWarningMessage,
+			stackAlertWarning: faucetAlert?.showWarningMessage,
 			switchTo: EVMChainIds.BASE_TESTNET
 		});
 		if (!wgamiLib) {

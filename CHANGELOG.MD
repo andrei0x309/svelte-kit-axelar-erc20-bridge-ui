@@ -1,5 +1,15 @@
 # Changelog
 
+## - 1.0.7 - realease
+
+- finished splited some components
+- tested bridge transfers
+- changed to work with axelar token
+- support for different decimals
+- changed design to support multiple tokens
+- created demo, and msall documentation website
+- added check to see if token approval is needed
+
 ## - 1.0.6 - dev
 
 - added utils to get axelar assets
@@ -11,7 +21,6 @@
 - added config flag to configure preferd token when UI in multi-token mode
 - started to split some components into smaller ones
 - added config flag to select prefered token when UI in multi-token mode
-
 
 ## - 1.0.4 - dev
 

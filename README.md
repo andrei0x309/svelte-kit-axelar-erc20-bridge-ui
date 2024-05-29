@@ -9,9 +9,10 @@ This is a community maintained project.
 Supports testnet and mainnet envoirment, by editing the config file, supports any custom non-canonical, non-warped ERC20 token,
 also has faucet functionality when is configured to use a faucet contract in development mode.
 
-It will support more advanced features like two modes, single mode for a single token, in case someone wants to deploy a bridge for a single token.
-And all tokens mode, in this mode will be deployed, that will allow public use.
-The token list will be automatically updated by a worker, that will fetch the tokens from the Axelar Network.
+It supports multiple tokens mode, in this mode will be deployed, that will allow public use, and will use a list of tokens from the Axelar Network.
+It also supports single token mode, in case you want to use a single token, and you can configure that in the config file.
+
+Has sample for faucet contract, and non-canonical ERC20 token, and also has a sample package for Axelar scripts to deploy token managers and bridge tokens using the Axelar Network, and UI for the faucet.
 
 This project will be realeased publicly on this timeline: [BUILD_ROADMAP.MD](/BUILD_ROADMAP.MD)
 
@@ -26,11 +27,15 @@ This project will be realeased publicly on this timeline: [BUILD_ROADMAP.MD](/BU
 - Viem
 - Vite
 
-## Screenshots (WIP)
+## Screenshot
 
-<!-- ![image](/repo_res/screen_thumb.webp)
+![image](/repo_res/screen_thumb.webp)
 
-Full size screenshots: [here](/repo_res/screen_full.webp) -->
+Full size screenshots: [here](/repo_res/screen_full.webp)
+
+## Video
+
+[https://youtu.be/80ZMnkxlqDs](https://youtu.be/80ZMnkxlqDs)
 
 ### License
 
