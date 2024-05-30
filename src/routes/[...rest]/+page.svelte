@@ -56,7 +56,6 @@
 	import AboutPage from './AboutPage.svelte';
 	import HistoryPage from './LocalHistoryPage.svelte';
 	import FaucetPage from './FaucetPage.svelte';
-	import { get } from 'svelte/store';
 
 	const allChains = config.isProd ? alexarIdentToChainId : testnetChains;
 
@@ -118,7 +117,7 @@
 		document.getElementById('source-input')?.focus?.();
 	};
 
-	const switchSourceChain = async (chain: number) => {
+	const switchSourceChain = async (chain: number, doBalance = true) => {
 		if (chain === sourceChain) return;
 		if (loading) return;
 		loading = true;
@@ -137,7 +136,9 @@
 			loading = false;
 			return;
 		}
-		await getBalance(chain);
+		if (doBalance) {
+			await getBalance(chain);
+		}
 		sourceChain = chain;
 		setFocusOnInput();
 		loading = false;
@@ -147,20 +148,19 @@
 	const switchSelectedToken = async (token: string) => {
 		const switchTo = getChainIdForAxelarChainIdent(getAxelarToken(token)?.chains[0]?.axelarChainId)
 		const needToSwitch = sourceChain !== switchTo;
+		setFocusOnInput();
 		if(needToSwitch) {
-			const switched = await switchSourceChain(switchTo)
+			const switched = await switchSourceChain(switchTo, false)
 			if (!switched) return;
 		} 
 		selectedToken = token;
 		decimals = getAxelarToken(selectedToken).decimals;
 		availableChains = getAvailableChainsForToken(selectedToken);
 		destChain =  multiTokenMode ? getChainIdForAxelarChainIdent(getAxelarToken(selectedToken)?.chains[1]?.axelarChainId) : defaultDestChain;
-		isConnected = await checkIsConnected();
 		tokenSymbol = multiTokenMode ? getAxelarToken(selectedToken).prettySymbol : config.token;
-		if(!needToSwitch) {
-			await getBalance()
-			setFocusOnInput();
-		}
+		await getBalance()
+		isConnected = await checkIsConnected();
+
 	};
 
 	const switchDestChain = async (chain: number) => {
@@ -612,6 +612,19 @@
 				<FaucetIcon class="w-6 h-6 mr-2" />
 				Faucet
 			</div>
+			<FaucetPage 
+			Web3Libs={Web3Libs} 
+			bind:address={address}
+			checkIsConnected={checkIsConnected}
+			getBalance={getBalance}
+			bind:transferAmount={transferAmount}
+			bind:faucetBalance={faucetBalance}
+			bind:faucetLoading={faucetLoading}
+			bind:isLoadingBalance={isLoadingBalance}
+			sourceChain={sourceChain}
+			isBaseTestnet={isBaseTestnet}
+			token={tokenSymbol}
+			/>
 			
 		</TabItem>
 	{/if}

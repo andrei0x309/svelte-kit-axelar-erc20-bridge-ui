@@ -37,6 +37,10 @@ Full size screenshots: [here](/repo_res/screen_full.webp)
 
 [https://youtu.be/80ZMnkxlqDs](https://youtu.be/80ZMnkxlqDs)
 
+## Docs website
+
+[https://docs-erc20-bridge.flashsoft.eu/](https://docs-erc20-bridge.flashsoft.eu/)
+
 ### License
 
 [MIT](LICENSE)
