@@ -131,8 +131,8 @@ export const axelarChainIdents = {
 }
 
 export async function gasEstimator(sourceChain: number, destChain: number, warning: (mgs: string) => void) {    
-   const sourceChainIdent = axelarChainIdents[sourceChain];
-   const destChainIdent = axelarChainIdents[destChain];
+   const sourceChainIdent = getAxelarIdentForChainId(sourceChain)
+   const destChainIdent =  getAxelarIdentForChainId(destChain)
         try {
         return await api.estimateGasFee(
             sourceChainIdent,

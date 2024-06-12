@@ -9,7 +9,7 @@ export const config = {
     defaultDestChain: IS_PROD ? EVMChainIds.BASE_MAINNET : EVMChainIds.FANTOM_TESTNET,
     isFaucetEnabled: true && !IS_PROD,
     isSupportLogEnabled: true && !IS_PROD,
-    supportLogEndpoint: '',
+    supportLogEndpoint: 'https://yup-bridge-log.deno.dev',
     decimals: 18,
     multiTokenMode: true,
     preferedMultiTokenId: '0x2c0750c34da5c9c247905e00ab868ebd7cfca098836eea019f0d0703426eac1b',
